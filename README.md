@@ -1,14 +1,17 @@
 # Py3ID3
+
 The mp3 tagger with no hidden magic.
 
 Every mp3 tag editor has a different focus.
 There are thousands of them,
 because everybody has a different way to organize their music.
-This program was purely made to be a no-magic tag editor, meaning that every change to the tags is made by the user, and will be instantly visible in the gui. Py3ID3 uses stagger to read and write tags and tkinter to create a gui.
-This is my first project using these packages, so it can probably be improved a lot.
-
-# Todo
-* Picture support
+This program was purely made to be a no-magic tag editor,
+meaning that every change to the tags is made by the user,
+and will be instantly visible in the gui.
+This project is created for Python 3 to manage ID3 tags.
+Py3ID3 uses stagger to read and write tags and tkinter to create a gui.
+This is my first project using these packages,
+so it can probably be improved a lot.
 
 # Features
 * View existing tags
