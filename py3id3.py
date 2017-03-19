@@ -4,9 +4,10 @@ __author__ = "Jelmerro"
 # See README.md for more details
 __license__ = "MIT"
 # See LICENSE for more details
-__version__ = "0.1.0"
-# See Jelmerro/Py3ID3 on github for updates
+__version__ = "0.2.0"
+# See Jelmerro/py3id3 on github for updates
 
+import os
 import stagger
 import tkinter as tk
 import webbrowser
@@ -244,6 +245,31 @@ class Application:
                 track)
         except ValueError or KeyError:
             return "Invalid tag error"
+        # Picture
+        if self.picture_enabled_var.get():
+            if self.picture_var.get():
+                new_tag.picture = self.picture_var.get()
+            else:
+                new_tag.picture = ""
+        else:
+            picture_data = ""
+            if "PIC" in old_tag:
+                picture_data = old_tag["PIC"][0].data
+            elif "APIC" in old_tag:
+                picture_data = old_tag["APIC"][0].data
+            if picture_data:
+                # This is required, for details see:
+                # https://github.com/lorentey/stagger/issues/48
+                with open("temp_image_file_for_stagger.png", "wb") as f:
+                    f.write(picture_data)
+                new_tag.picture = "temp_image_file_for_stagger.png"
+            else:
+                new_tag.picture = ""
+            try:
+                os.remove("temp_image_file_for_stagger.png")
+            except OSError:
+                pass
+        # Write to file
         try:
             new_tag.write(file)
         except FileNotFoundError:
@@ -274,26 +300,111 @@ class Application:
         for field in ID3_FIELDS:
             FIELDS[field] = Field(field, row, self.frame)
             row += 1
-        # version
+        # special fields
+        version_frame = tk.Frame(self.frame)
+        version_frame.grid(column=1, row=row)
+        # version field
         self.version_label = tk.Label(self.frame, text="ID3 Version")
         self.version_label.grid(column=0, row=row)
         self.version_var = tk.StringVar()
         self.version = tk.Entry(
-            self.frame,
+            version_frame,
             width=50,
             state=tk.DISABLED,
             textvariable=self.version_var)
-        self.version.grid(column=1, row=row)
-        # other
-        holder = tk.Frame(self.frame)
-        holder.grid(column=3, row=row)
+        self.version.grid(column=0, row=0)
+        # version settings
+        keep_obscure_frame = tk.Frame(version_frame)
+        keep_obscure_frame.grid(column=0, row=1)
         self.keep_obscure = tk.IntVar()
-        check = tk.Checkbutton(holder, variable=self.keep_obscure)
-        check.grid(column=3, row=0)
+        check = tk.Checkbutton(
+            keep_obscure_frame,
+            variable=self.keep_obscure)
+        check.grid(column=0, row=0)
         label = tk.Label(
-            holder,
+            keep_obscure_frame,
             text="Keep obscure tags for files with unchanged ID3 versions")
-        label.grid(column=4, row=0)
+        label.grid(column=1, row=0)
+        # picture settings
+        self.picture_enabled_var = tk.IntVar()
+        self.picture_enabled = tk.Checkbutton(
+            self.frame,
+            variable=self.picture_enabled_var)
+        self.picture_enabled.grid(column=2, row=row)
+        self.picture_enabled.bind("<Button-1>", self.update_picture)
+        self.picture_enabled.bind("<Return>", self.update_picture)
+        self.picture_enabled.bind("<space>", self.update_picture)
+        picture_settings_frame = tk.Frame(self.frame)
+        picture_settings_frame.grid(column=3, row=row)
+        browse_button = tk.Button(picture_settings_frame, text="Browse")
+        browse_button.grid(column=0, row=0)
+        browse_button.bind("<Button-1>", self.open_picture)
+        browse_button.bind("<Return>", self.open_picture)
+        browse_button.bind("<space>", self.open_picture)
+        self.picture_var = tk.StringVar()
+        self.picture = tk.Entry(
+            picture_settings_frame,
+            width=30,
+            state=tk.DISABLED,
+            textvariable=self.picture_var)
+        self.picture.grid(column=1, row=0)
+        self.picture_status_var = tk.StringVar()
+        self.picture_status_var.set("All files will keep the current picture")
+        picture_status = tk.Label(
+            picture_settings_frame,
+            textvariable=self.picture_status_var)
+        picture_status.grid(column=1, row=1)
+        clear_button = tk.Button(picture_settings_frame, text="Clear")
+        clear_button.grid(column=2, row=0)
+        clear_button.bind("<Button-1>", self.clear_picture)
+        clear_button.bind("<Return>", self.clear_picture)
+        clear_button.bind("<space>", self.clear_picture)
+
+    def clear_picture(self, event=None):
+        """
+        Clears the picture field
+        """
+        self.picture_var.set("")
+        self.update_picture()
+
+    def open_picture(self, event=None):
+        if event:
+            event.widget.after_idle(self.open_picture_callback)
+        else:
+            self.open_picture_callback()
+
+    def open_picture_callback(self, e=None):
+        """
+        Show a file browser and set the new picture
+        """
+        # Limit the selection to png and jpg only
+        self.file_opened = filedialog.askopenfilename(
+            filetypes=(("PNG files", "*.png"),))
+        # If any files were opened, add them to files
+        if self.file_opened:
+            self.picture_var.set(self.file_opened)
+            self.update_picture()
+
+    def update_picture(self, event=None):
+        if event:
+            event.widget.after_idle(self.update_picture_callback)
+        else:
+            self.update_picture_callback()
+
+    def update_picture_callback(self, e=None):
+        """
+        Update the picture status label to match new the settings
+        """
+        if self.picture_enabled_var.get():
+            if self.picture_var.get():
+                self.picture_status_var.set(
+                    "All files will have this picture added")
+            else:
+                self.picture_status_var.set(
+                    "All files will have the picture removed")
+        else:
+            self.picture_status_var.set(
+                "All files will keep the current picture")
 
     def update_fields(self):
         """
@@ -350,7 +461,7 @@ class Application:
             for field in ID3_FIELDS:
                 if all_the_same[field]:
                     FIELDS[field].set_original(last_value[field])
-                FIELDS[field].update_output(None)
+                FIELDS[field].update_output()
             if all_the_same["version"]:
                 self.version_var.set(last_value["version"])
 
@@ -472,13 +583,16 @@ class Field(tk.Frame):
     def set_output(self, text):
         self.output_var.set(text)
 
-    def update_output(self, event):
+    def update_output(self, event=None):
         if event:
             event.widget.after_idle(self.update_output_callback)
         else:
             self.update_output_callback()
 
     def update_output_callback(self):
+        """
+        Update the output fields to match the new settings
+        """
         if self.name in ["track", "track_total"]:
             if FIELDS["track"].checked():
                 padding = FIELDS["track_total"].checked()
@@ -496,6 +610,9 @@ class Field(tk.Frame):
                 self.set_output(self.text())
 
     def get_numbering(self, padding):
+        """
+        Returns a formatted string version of the numbering
+        """
         if not FILES:
             return "", ""
         track = ""
