@@ -4,7 +4,7 @@ __author__ = "Jelmerro"
 # See README.md for more details
 __license__ = "MIT"
 # See LICENSE for more details
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 # See Jelmerro/py3id3 on github for updates
 
 import os
@@ -90,6 +90,8 @@ class Application:
         root.config(menu=menubar)
         # Add the fields to the frame
         self.create_fields()
+        root.bind("<Control-q>", lambda e: close_window_callback(root))
+        root.bind("<Control-Q>", lambda e: close_window_callback(root))
 
     def browse_files_popup(self):
         """
@@ -501,6 +503,7 @@ class Popup:
         popup.title(title)
         popup.resizable(False, False)
         popup.wm_attributes("-topmost", True)
+        popup.bind("<Escape>", lambda e: popup.destroy())
 
 
 class Field(tk.Frame):
