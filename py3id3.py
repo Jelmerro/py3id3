@@ -119,7 +119,7 @@ class Application:
         """
         file_list = ""
         for file in FILES:
-            file_list += "{}\n".format(file)
+            file_list += f"{file}\n"
         if file_list:
             Popup(self.frame, "Files", file_list)
         else:
@@ -153,9 +153,9 @@ class Application:
             try:
                 tag = stagger.read_tag(file)
             except FileNotFoundError:
-                skipped[file] = "missing file: {}".format(file)
+                skipped[file] = f"missing file: {file}"
             except stagger.errors.NoTagError:
-                skipped[file] = "missing id3 tag: {}".format(file)
+                skipped[file] = f"missing id3 tag: {file}"
             if tag:
                 version = self.file_version(tag.version, requested_version)
                 error = self.write_tag_to_file(tag, file, version)
@@ -171,18 +171,16 @@ class Application:
         success_number = len(FILES) - len(skipped)
         if FILES:
             if success_number == 0:
-                message = "All {} files failed:\n".format(len(FILES))
+                message = f"All {len(FILES)} files failed:\n"
                 for file, error in skipped.items():
-                    message += "{} - {}\n".format(file, error)
+                    message += f"{file} - {error}\n"
             elif skipped:
-                message = "{} of the {} succeeded, but some failed:\n".format(
-                    success_number,
-                    len(FILES))
+                message = f"{success_number} of the {len(FILES)} succeeded, but some failed:\n"
                 for file, error in skipped.items():
-                    message += "{} - {}\n".format(file, error)
+                    message += f"{file} - {error}\n"
             else:
-                message = "Replaced tags for all {} files " \
-                          "with success\n".format(len(FILES))
+                message = f"Replaced tags for all {len(FILES)} files " \
+                          "with success\n"
         else:
             message = "No files have been opened yet\n"
         Popup(self.frame, "Done", message)
@@ -196,7 +194,7 @@ class Application:
         """
         # Create a tag with the correct version
         if version not in [0, 2, 3, 4]:
-            return "Invalid version {}".format(version)
+            return f"Invalid version {version}"
         if version == 0:
             new_tag = old_tag
         if version == 2:
@@ -428,30 +426,24 @@ class Application:
                 Popup(
                     self.frame,
                     "Warning",
-                    "missing file: {}".format(file))
+                    f"missing file: {file}")
                 remove_list.append(file)
             except stagger.errors.NoTagError:
                 Popup(
                     self.frame,
                     "Warning",
-                    "missing id3 tag: {}".format(file))
+                    f"missing id3 tag: {file}")
                 remove_list.append(file)
             if tag:
                 for field in ID3_FIELDS:
                     value = getattr(tag, field)
-                    FIELDS[field].set_original("{}{}{}".format(
-                        FIELDS[field].original(),
-                        separator,
-                        value))
+                    FIELDS[field].set_original(f"{FIELDS[field].original()}{separator}{value}")
                     if field in last_value:
                         if last_value[field] != value:
                             all_the_same[field] = False
                     last_value[field] = value
                 value = getattr(tag, "version")
-                self.version_var.set("{}{}{}".format(
-                    self.version_var.get(),
-                    separator,
-                    value))
+                self.version_var.set(f"{self.version_var.get()}{separator}{value}")
                 if "version" in last_value:
                     if last_value["version"] != value:
                         all_the_same["version"] = False
@@ -485,20 +477,20 @@ class Popup:
         popup = tk.Toplevel(frame, padx="40", pady="40")
         # Add a link if provided
         if link_title:
-            label = tk.Label(popup, text=message, font="-size {}".format(size))
+            label = tk.Label(popup, text=message, font=f"-size {size}")
             label.grid(row=0)
             link_label = tk.Label(
                 popup,
                 text=link_title,
                 fg="blue",
                 cursor="hand2",
-                font="-size {}".format(link_size))
+                font=f"-size {link_size}")
             link_label.bind(
                 "<Button-1>",
                 lambda e: webbrowser.open_new(link))
             link_label.grid(row=1)
         else:
-            tk.Label(popup, text=message, font="-size {}".format(size)).pack()
+            tk.Label(popup, text=message, font=f"-size {size}").pack()
         popup.grab_set()
         popup.title(title)
         popup.resizable(False, False)
@@ -623,9 +615,9 @@ class Field(tk.Frame):
         id = 1
         for file in FILES:
             if padding:
-                track += "{};".format(str(id).zfill(len(track_total)))
+                track += f"{str(id).zfill(len(track_total))};"
             else:
-                track += "{};".format(id)
+                track += f"{id};"
             id += 1
         track = track[:-1]
         return track, track_total
